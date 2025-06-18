@@ -1,0 +1,23 @@
+name: Build Executables
+on: [push]
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install pyinstaller
+      - name: Build executable
+        run: pyinstaller --onefile --add-data "./draft_content_template.json:pyJianYingDraft" jianying-draft-generator.py
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ runner.os }}-executable
+          path: dist/
