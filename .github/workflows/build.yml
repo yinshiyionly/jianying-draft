@@ -1,23 +1,46 @@
 name: Build Executables
+
 on: [push]
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - name: Install dependencies
+
+      - name: Install system dependencies (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libglib2.0-0 libxrender1 libsm6 libxext6
+
+      - name: Install Python dependencies
         run: pip install pyinstaller
+
+      - name: Set PYINSTALLER_ARGS
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo 'PYINSTALLER_ARGS=--add-data "pyJianYingDraft\\draft_content_template.json;pyJianYingDraft"' >> $GITHUB_ENV
+          else
+            echo 'PYINSTALLER_ARGS=--add-data "pyJianYingDraft/draft_content_template.json:pyJianYingDraft"' >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - name: Build executable
-        run: pyinstaller --onefile --add-data "./draft_content_template.json:pyJianYingDraft" jianying-draft-generator.py
+        run: pyinstaller --onefile $PYINSTALLER_ARGS jianying-draft-generator.py
+        shell: bash
+
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-executable
           path: dist/
